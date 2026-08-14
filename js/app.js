@@ -73,7 +73,7 @@ document.getElementById("inputFoto").addEventListener("change", async (e) => {
 
   const { error: uploadError } = await supabase.storage
     .from("fotos-familia")
-    .upload(nombreArchivo, file);
+    .upload(nombreArchivo, file, { upsert: true });
 
   if (uploadError) {
     mostrarToast("Error al subir la foto: " + uploadError.message, "error");
@@ -93,7 +93,6 @@ document.getElementById("inputFoto").addEventListener("change", async (e) => {
 
   if (updateError) {
     mostrarToast("Error al guardar la foto: " + updateError.message, "error");
-    return;
   }
 
   document.getElementById("fotoFamiliar").src = foto_url;
@@ -105,40 +104,42 @@ const btnCancelar = document.getElementById("btnCancelar");
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
-
+  
   const { data: { user } } = await supabase.auth.getUser();
-
+  
   const gasto = {
     descripcion: document.getElementById("descripcion").value.trim(),
     monto: parseFloat(document.getElementById("monto").value),
     categoria: document.getElementById("categoria").value,
     fecha: document.getElementById("fecha").value,
-    user_id: user.id,
+    usuario_id: user.id,
   };
 
   if (editando) {
     const id = document.getElementById("gastoId").value;
     const { error } = await supabase.from("gastos").update(gasto).eq("id", id);
-    if (error) return mostrarToast("Error al actualizar: " + error.message, "error");
+    if (error) {
+      mostrarToast("Error al actualizar: " + error.message, "error");
+    } else {
+      resetForm();
+      mostrarToast("Gasto actualizado correctamente", "exito");
+      await cargarGastos();
+    }
   } else {
     const { error } = await supabase.from("gastos").insert([gasto]);
-    if (error) return mostrarToast("Error al guardar: " + error.message, "error");
+    if (error) {
+      mostrarToast("Error al guardar: " + error.message, "error");
+    } else {
+      resetForm();
+      mostrarToast("Gasto guardado correctamente", "exito");
+      await cargarGastos();
+    }
   }
-
-  resetForm();
-  mostrarToast("Gasto guardado correctamente", "exito");
-  await cargarGastos();
 });
 
 btnCancelar.addEventListener("click", resetForm);
 
 function resetForm() {
-  form.reset();
-  document.getElementById("gastoId").value = "";
-  document.getElementById("fecha").valueAsDate = new Date();
-  editando = false;
-  btnCancelar.hidden = true;
-  document.getElementById("btnGuardar").textContent = "Guardar gasto";
 }
 
 async function cargarGastos() {
@@ -182,7 +183,7 @@ function pintarTabla(gastos) {
 window.editarGasto = async function (id) {
   const { data, error } = await supabase.from("gastos").select("*").eq("id", id).single();
   if (error) return mostrarToast("Error: " + error.message, "error");
-
+  
   document.getElementById("gastoId").value = data.id;
   document.getElementById("descripcion").value = data.descripcion;
   document.getElementById("monto").value = data.monto;
@@ -200,7 +201,6 @@ window.eliminarGasto = async function (id) {
 
   const { error } = await supabase.from("gastos").delete().eq("id", id);
   if (error) return mostrarToast("Error al eliminar: " + error.message, "error");
-
   await cargarGastos();
 };
 
@@ -271,9 +271,5 @@ function pintarCategorias(gastos) {
 
 // ---------- INICIO ----------
 document.getElementById("fecha").valueAsDate = new Date();
-document.getElementById("btnCerrarSesion").addEventListener("click", (e) => {
-  e.preventDefault();
-  cerrarSesion();
-});
 cargarFamilia();
 cargarGastos();
