@@ -113,7 +113,7 @@ form.addEventListener("submit", async (e) => {
     monto: parseFloat(document.getElementById("monto").value),
     categoria: document.getElementById("categoria").value,
     fecha: document.getElementById("fecha").value,
-    usuario_id: user.id,
+    user_id: user.id,
   };
 
   if (editando) {
