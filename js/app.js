@@ -73,7 +73,7 @@ document.getElementById("inputFoto").addEventListener("change", async (e) => {
 
   const { error: uploadError } = await supabase.storage
     .from("fotos-familia")
-    .upload(nombreArchivo, file, { upsert: true });
+    .upload(nombreArchivo, file);
 
   if (uploadError) {
     mostrarToast("Error al subir la foto: " + uploadError.message, "error");
